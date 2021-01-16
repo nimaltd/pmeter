@@ -139,13 +139,13 @@ void pmeter_calib_step2_res_load(pmeter_calib_t *pmeter_calib, float rms_current
   pmeter_calib->w = error;
 }
 //###################################################################################################
-void pmeter_calib_set(pmeter_calib_t *pmeter_calib)
+void pmeter_calib_set(pmeter_calib_t pmeter_calib)
 {
-  pmeter.calib.offset = pmeter_calib->offset;
-  pmeter.calib.v = pmeter_calib->v;
-  pmeter.calib.i = pmeter_calib->i;
-  pmeter.calib.w = pmeter_calib->w;
-  pmeter.v_ratio *= pmeter.calib.v;
-  pmeter.i_ratio *= pmeter.calib.i;
+  pmeter.calib.offset = pmeter_calib.offset;
+  pmeter.calib.v = pmeter_calib.v;
+  pmeter.calib.i = pmeter_calib.i;
+  pmeter.calib.w = pmeter_calib.w;
+  pmeter.v_ratio *= pmeter_calib.v;
+  pmeter.i_ratio *= pmeter_calib.i;
 }
 //###################################################################################################

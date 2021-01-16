@@ -62,6 +62,6 @@ void          pmeter_reset_counter(void);
 
 void          pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage);  //  no load
 void          pmeter_calib_step2_res_load(pmeter_calib_t *pmeter_calib, float rms_current); //  resistor load with nominal current
-void          pmeter_calib_set(pmeter_calib_t *pmeter_calib);
+void          pmeter_calib_set(pmeter_calib_t pmeter_calib);
 //############################################################################################
 #endif /* _PMETER_H_ */
