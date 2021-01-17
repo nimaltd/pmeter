@@ -3,7 +3,7 @@
 #ifndef _PMETERCONFIG_H_
 #define _PMETERCONFIG_H_
 
-#define _PMETER_DEBUG             0
+#define _PMETER_DEBUG             1
 #define _PMETER_RTOS              1
 #define _PMETER_TIM               htim15
 #define _PMETER_ADC               hadc1

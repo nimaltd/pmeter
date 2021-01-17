@@ -45,7 +45,7 @@ void pmeter_callback(void)
 void pmeter_init(uint16_t timer_freq_mhz)
 {
   _PMETER_TIM.Instance->PSC = timer_freq_mhz - 1;
-  _PMETER_TIM.Instance->ARR = (_PMETER_SAMPLE / 2) - 1;
+  _PMETER_TIM.Instance->ARR = (uint32_t)((float)_PMETER_SAMPLE / (((float)_PMETER_SAMPLE / 1000.0f) * ((float)_PMETER_SAMPLE / 1000.0f))) - 1;
   HAL_TIM_Base_Start(&_PMETER_TIM);
   HAL_ADC_Start_DMA(&_PMETER_ADC, (uint32_t*)pmeter.buff[pmeter.buff_inedex], _PMETER_SAMPLE * 2);
   pmeter.v_ratio = (_PMETER_REFERENCE / (float)(1 << _PMETER_ADC_BIT)) * (1.0f / (_PMETER_VDIV_R2 / (_PMETER_VDIV_R1 + _PMETER_VDIV_R2)));
@@ -54,7 +54,7 @@ void pmeter_init(uint16_t timer_freq_mhz)
   pmeter.calib.v = 1.0f;
   pmeter.calib.i = 1.0f;
   pmeter.calib.offset = (uint16_t)(1 << _PMETER_ADC_BIT) / 2;
-  pmeter_printf("[pmeter] init done. timer frequency: %d , period : %d ms\r\n", timer_freq_mhz, _PMETER_SAMPLE);
+  pmeter_printf("[pmeter] init done. timer frequency: %d MHz\r\n", timer_freq_mhz);
 }
 //###################################################################################################
 void pmeter_loop(void)

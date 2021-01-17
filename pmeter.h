@@ -15,10 +15,11 @@
  */
 
 /*
- * Version: 1.0.0
+ * Version: 1.0.1
  *
  * History:
  *
+ * (1.0.1): fix configuration timer value.
  * (1.0.0): First release.
  */
 
