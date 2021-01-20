@@ -1,4 +1,5 @@
 # power meter
+AC power meter based on STM32 ADC
 
 *	Author:     Nima Askari
 *	WebSite:    https://www.github.com/NimaLTD
@@ -6,7 +7,6 @@
 *	LinkedIn:   https://www.linkedin.com/in/NimaLTD
 *	Youtube:    https://www.youtube.com/channel/UCUhY7qY1klJm1d2kulr9ckw 
 
-AC power meter based on STM32 ADC
 * Setlect a ADC and enable 2 channel, v and i.
 * Set number of conversion to 2.
 * Set enable scan conversion.
