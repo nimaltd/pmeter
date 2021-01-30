@@ -41,8 +41,8 @@ void main()
   //pmeter_calib_step1_no_load(&calib, 24.5f); // 24.5v measure by ac multimeter
   //pmeter_calib_step2_res_load(&calib, 0.650f);// put a resistor and measure by ac multimeter
   calib.offset = 1980;
-  calib.v = 0.9794f;
-  calib.i = 0.9393f;
+  calib.v = 0.0245f;
+  calib.i = 0.00393f;
   calib.w = 1.030f;
   pmeter_calib_set(calib);
   while(1)
