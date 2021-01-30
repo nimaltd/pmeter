@@ -15,10 +15,10 @@
  */
 
 /*
- * Version: 1.0.1
+ * Version: 1.0.2
  *
  * History:
- *
+ * (1.0.2): fix calibration.
  * (1.0.1): fix configuration timer value.
  * (1.0.0): First release.
  */
@@ -37,10 +37,10 @@ typedef struct
   uint16_t        buff[2][_PMETER_SAMPLE * 2];
   uint8_t         buff_inedex;
   uint8_t         buff_done;
-  pmeter_calib_t  calib;
-
+  uint16_t        offset;
   float           v_ratio;
   float           i_ratio;
+  float           w_ratio;
   float           v;
   float           i;
   float           va;
