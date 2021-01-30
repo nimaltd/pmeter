@@ -59,7 +59,7 @@ void pmeter_init(uint16_t timer_freq_mhz)
   pmeter_printf("[pmeter] init done. timer frequency: %d MHz\r\n", timer_freq_mhz);
 }
 //###################################################################################################
-void pmeter_loop(void)
+uint8_t pmeter_loop(void)
 {
   if (pmeter.buff_done == 1)
   {
@@ -95,7 +95,10 @@ void pmeter_loop(void)
     pmeter.vah += pmeter.va / 3600.0f;
     pmeter.wh += pmeter.w / 3600.0f;
     pmeter.varh += pmeter.var / 3600.0f;
+    return 1;
   }
+  else
+    return 0;
 }
 //###################################################################################################
 void pmeter_reset_counter(void)

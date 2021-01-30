@@ -58,7 +58,7 @@ extern pmeter_t pmeter;
 //############################################################################################
 void          pmeter_callback(void);
 void          pmeter_init(uint16_t timer_freq_mhz);
-void          pmeter_loop(void);
+uint8_t       pmeter_loop(void);  //  after update value, return 1
 void          pmeter_reset_counter(void);
 
 void          pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage);  //  no load
