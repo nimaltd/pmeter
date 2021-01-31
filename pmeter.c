@@ -5,14 +5,10 @@
 
 #if (_PMETER_RTOS == 0)
 #define pmeter_delay(x)  HAL_Delay(x)
-#elif (_PMETER_RTOS == 1)
+#else
 #include "cmsis_os.h"
 #include "freertos.h"
 #define pmeter_delay(x)  osDelay(x)
-#else
-#include "cmsis_os2.h"
-#include "freertos.h"
-#define _PMETER_delay(x)  osDelay(x)
 #endif
 #if (_PMETER_DEBUG == 1)
 #include <stdio.h>
@@ -52,10 +48,6 @@ void pmeter_init(uint16_t timer_freq_mhz)
   pmeter.i_ratio = (_PMETER_REFERENCE / (float) (1 << _PMETER_ADC_BIT)) * ((float) _PMETER_CT_RATIO / (float) _PMETER_CT_RESISTOR);
   pmeter.w_ratio = 1.0f;
   pmeter.offset = (uint16_t)(1 << _PMETER_ADC_BIT) / 2;
-//  pmeter.calib.w = 1.0f;
-//  pmeter.calib.v = 1.0f;
-//  pmeter.calib.i = 1.0f;
-//  pmeter.calib.offset = (uint16_t)(1 << _PMETER_ADC_BIT) / 2;
   pmeter_printf("[pmeter] init done. timer frequency: %d MHz\r\n", timer_freq_mhz);
 }
 //###################################################################################################
@@ -90,8 +82,8 @@ uint8_t pmeter_loop(void)
     pmeter.pf = pmeter.w / pmeter.va;
     if (pmeter.pf < 0.00000001f)
       pmeter.pf = 0.00000001f;
-    pmeter.fi = 360.0f * (acos(pmeter.pf) / (2.0f*3.14159265f));
-    pmeter.var = pmeter.v * pmeter.i * sin(pmeter.fi);
+    pmeter.fi = 360.0f * (acosf(pmeter.pf) / (2.0f*3.14159265f));
+    pmeter.var = pmeter.v * pmeter.i * sinf(pmeter.fi);
     pmeter.vah += pmeter.va / 3600.0f;
     pmeter.wh += pmeter.w / 3600.0f;
     pmeter.varh += pmeter.var / 3600.0f;
@@ -158,14 +150,9 @@ void pmeter_calib_step2_res_load(pmeter_calib_t *pmeter_calib, float rms_current
 //###################################################################################################
 void pmeter_calib_set(pmeter_calib_t pmeter_calib)
 {
-//  pmeter.calib.offset = pmeter_calib.offset;
-//  pmeter.calib.v = pmeter_calib.v;
-//  pmeter.calib.i = pmeter_calib.i;
-//  pmeter.calib.w = pmeter_calib.w;
   pmeter.v_ratio = pmeter_calib.v;
   pmeter.i_ratio = pmeter_calib.i;
   pmeter.w_ratio = pmeter_calib.w;
   pmeter.offset = pmeter_calib.offset;
-
 }
 //###################################################################################################
