@@ -15,13 +15,18 @@
  */
 
 /*
- * Version: 1.0.2
+ * Version: 1.0.3
  *
  * History:
+ * (1.0.3): fix NaN values.
  * (1.0.2): fix calibration.
  * (1.0.1): fix configuration timer value.
  * (1.0.0): First release.
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
@@ -56,13 +61,16 @@ typedef struct
 
 extern pmeter_t pmeter;
 //############################################################################################
-void          pmeter_callback(void);
-void          pmeter_init(uint16_t timer_freq_mhz);
+void          pmeter_callback(void); // adc dma callback
+void          pmeter_init(uint16_t timer_freq_mhz); //  init power meter
 uint8_t       pmeter_loop(void);  //  after update value, return 1
-void          pmeter_reset_counter(void);
+void          pmeter_reset_counter(void); //  reset all wh,vah,varh
 
-void          pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage);  //  no load
-void          pmeter_calib_step2_res_load(pmeter_calib_t *pmeter_calib, float rms_current); //  resistor load with nominal current
-void          pmeter_calib_set(pmeter_calib_t pmeter_calib);
+void          pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage);  //  calibration, no load, input voltage
+void          pmeter_calib_step2_res_load(pmeter_calib_t *pmeter_calib, float rms_current); //  calibration, resistor load , input current
+void          pmeter_calib_set(pmeter_calib_t pmeter_calib); // set calibration values
 //############################################################################################
+#ifdef __cplusplus
+}
+#endif
 #endif /* _PMETER_H_ */

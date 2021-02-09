@@ -80,12 +80,15 @@ uint8_t pmeter_loop(void)
     if (pmeter.w > pmeter.va)
       pmeter.w = pmeter.va;
     pmeter.pf = pmeter.w / pmeter.va;
-    if (pmeter.pf < 0.00000001f)
-      pmeter.pf = 0.00000001f;
+    if (isnan(pmeter.pf))
+      pmeter.pf = 1.0;
     pmeter.fi = 360.0f * (acosf(pmeter.pf) / (2.0f*3.14159265f));
+    if (isnan(pmeter.fi))
+      pmeter.fi = 0;
     pmeter.var = pmeter.v * pmeter.i * sinf(pmeter.fi);
+    if (isnan(pmeter.var))
+      pmeter.var = 0;
     pmeter.vah += pmeter.va / 3600.0f;
-    pmeter.wh += pmeter.w / 3600.0f;
     pmeter.varh += pmeter.var / 3600.0f;
     return 1;
   }
