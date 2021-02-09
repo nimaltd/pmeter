@@ -15,9 +15,10 @@
  */
 
 /*
- * Version: 1.0.3
+ * Version: 1.0.4
  *
  * History:
+ * (1.0.4): Improve VAR Accuracy.
  * (1.0.3): fix NaN values.
  * (1.0.2): fix calibration.
  * (1.0.1): fix configuration timer value.

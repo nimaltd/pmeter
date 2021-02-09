@@ -85,7 +85,7 @@ uint8_t pmeter_loop(void)
     pmeter.fi = 360.0f * (acosf(pmeter.pf) / (2.0f*3.14159265f));
     if (isnan(pmeter.fi))
       pmeter.fi = 0;
-    pmeter.var = pmeter.v * pmeter.i * sinf(pmeter.fi);
+    pmeter.var = pmeter.v * pmeter.i * sinf(acosf(pmeter.pf));
     if (isnan(pmeter.var))
       pmeter.var = 0;
     pmeter.wh += pmeter.w / 3600.0f;
