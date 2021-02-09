@@ -49,10 +49,10 @@ typedef struct
   float           v;
   float           i;
   float           va;
-  float           vah;
   float           w;
-  float           wh;
   float           var;
+  float           vah;
+  float           wh;
   float           varh;
   float           pf;
   float           fi;

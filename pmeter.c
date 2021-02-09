@@ -88,6 +88,7 @@ uint8_t pmeter_loop(void)
     pmeter.var = pmeter.v * pmeter.i * sinf(pmeter.fi);
     if (isnan(pmeter.var))
       pmeter.var = 0;
+    pmeter.wh += pmeter.w / 3600.0f;
     pmeter.vah += pmeter.va / 3600.0f;
     pmeter.varh += pmeter.var / 3600.0f;
     return 1;
