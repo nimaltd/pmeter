@@ -44,10 +44,10 @@ void pmeter_init(uint16_t timer_freq_mhz)
   _PMETER_TIM.Instance->ARR = (uint32_t)((float)_PMETER_SAMPLE / (((float)_PMETER_SAMPLE / 1000.0f) * ((float)_PMETER_SAMPLE / 1000.0f))) - 1;
   HAL_TIM_Base_Start(&_PMETER_TIM);
   HAL_ADC_Start_DMA(&_PMETER_ADC, (uint32_t*)pmeter.buff[pmeter.buff_inedex], _PMETER_SAMPLE * 2);
-  pmeter.v_ratio = (_PMETER_REFERENCE / (float)(1 << _PMETER_ADC_BIT)) * (1.0f / (_PMETER_VDIV_R2 / (_PMETER_VDIV_R1 + _PMETER_VDIV_R2)));
-  pmeter.i_ratio = (_PMETER_REFERENCE / (float) (1 << _PMETER_ADC_BIT)) * ((float) _PMETER_CT_RATIO / (float) _PMETER_CT_RESISTOR);
+  pmeter.v_ratio = 1.0f;
+  pmeter.i_ratio = 1.0f;
   pmeter.w_ratio = 1.0f;
-  pmeter.offset = (uint16_t)(1 << _PMETER_ADC_BIT) / 2;
+  pmeter.offset = 2048;
   pmeter_printf("[pmeter] init done. timer frequency: %d MHz\r\n", timer_freq_mhz);
 }
 //###################################################################################################
@@ -68,8 +68,8 @@ uint8_t pmeter_loop(void)
       if (i_signed > _PMETER_ADC_NOISE_VALUE || i_signed < -_PMETER_ADC_NOISE_VALUE)
       {
         i_sum_sq += (i_signed * i_signed);
+        p_sum += i_signed * v_signed;
       }
-      p_sum += i_signed * v_signed;
     }
     rms = (float)sqrt((float)v_sum_sq / (float)_PMETER_SAMPLE) * pmeter.v_ratio;
     pmeter.v = rms;
@@ -81,12 +81,9 @@ uint8_t pmeter_loop(void)
       pmeter.w = pmeter.va;
     pmeter.pf = pmeter.w / pmeter.va;
     if (isnan(pmeter.pf))
-      pmeter.pf = 1.0;
-    float fi = acosf(pmeter.pf);
-    pmeter.fi = 360.0f * (fi / (2.0f*3.14159265f));
-    if (isnan(pmeter.fi))
-      pmeter.fi = 0;
-    pmeter.var = pmeter.v * pmeter.i * sinf(fi);
+      pmeter.pf = 1.0f;
+    pmeter.fi = 360.0f * (acosf(pmeter.pf) / (2.0f * 3.14159265f));
+    pmeter.var = pmeter.v * pmeter.i * sinf(pmeter.fi);
     if (isnan(pmeter.var))
       pmeter.var = 0;
     pmeter.wh += pmeter.w / 3600.0f;
@@ -108,15 +105,13 @@ void pmeter_reset_counter(void)
 void pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage)
 {
   pmeter_printf("[pmeter] calibration step 1, no load, rms voltage: %0.2f\r\n", rms_voltage);
-  pmeter.v_ratio = (_PMETER_REFERENCE / (float)(1 << _PMETER_ADC_BIT)) * (1.0f / (_PMETER_VDIV_R2 / (_PMETER_VDIV_R1 + _PMETER_VDIV_R2)));
-  pmeter.i_ratio = (_PMETER_REFERENCE / (float) (1 << _PMETER_ADC_BIT)) * ((float) _PMETER_CT_RATIO / (float) _PMETER_CT_RESISTOR);
+  pmeter.v_ratio = 1.0f;
+  pmeter.i_ratio = 1.0f;
   pmeter.w_ratio = 1.0f;
-  pmeter.buff_done = 0;
-  while (pmeter.buff_done == 0)
+  while (pmeter_loop() == 0)
     pmeter_delay(1);
-  pmeter.buff_done = 0;
-  while (pmeter.buff_done == 0)
-    pmeter_delay(1);
+  while (pmeter_loop() == 0)
+    pmeter_delay(1);  
   uint32_t sum = 0;
   for (uint16_t i = _PMETER_RANK_I - 1; i < _PMETER_SAMPLE * 2; i += 2)
     sum += pmeter.buff[1 - pmeter.buff_inedex][i];
@@ -124,10 +119,10 @@ void pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage)
   pmeter_printf("[pmeter] pmeter.offset: %d\r\n", (uint16_t )sum);
   pmeter_calib->offset = sum;
   pmeter.offset = sum;
-  pmeter.buff_done = 0;
-  while (pmeter.buff_done == 0)
+  while (pmeter_loop() == 0)
     pmeter_delay(1);
-  pmeter_loop();
+  while (pmeter_loop() == 0)
+    pmeter_delay(1);
   float error = rms_voltage / pmeter.v;
   pmeter_calib->v = error * pmeter.v_ratio;
   pmeter.v_ratio = pmeter_calib->v;
@@ -137,15 +132,17 @@ void pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage)
 void pmeter_calib_step2_res_load(pmeter_calib_t *pmeter_calib, float rms_current)
 {
   pmeter_printf("[pmeter] calibration step 2, resistor load, rms current: %0.2f\r\n", rms_current);
-  uint32_t start = HAL_GetTick();
-  while (HAL_GetTick() - start < 3000)
-  {
-    pmeter_loop();
+  while (pmeter_loop() == 0)
     pmeter_delay(1);
-  }
+  while (pmeter_loop() == 0)
+    pmeter_delay(1);
   float error = rms_current / pmeter.i;
   pmeter_calib->i = error * pmeter.i_ratio;
   pmeter.i_ratio = pmeter_calib->i;
+  while (pmeter_loop() == 0)
+    pmeter_delay(1);
+  while (pmeter_loop() == 0)
+    pmeter_delay(1);
   error = pmeter.va / pmeter.w;
   pmeter_calib->w = error;
   pmeter.w_ratio = error;

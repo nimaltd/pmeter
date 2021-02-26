@@ -15,13 +15,14 @@
  */
 
 /*
- * Version: 1.0.4
+ * Version: 1.1.0
  *
  * History:
+ * (1.1.0): Bug fixed. Do not need ratio of resistors and CT.
  * (1.0.4): Improve VAR Accuracy.
- * (1.0.3): fix NaN values.
- * (1.0.2): fix calibration.
- * (1.0.1): fix configuration timer value.
+ * (1.0.3): Fix NaN values.
+ * (1.0.2): Fix calibration.
+ * (1.0.1): Fix configuration timer value.
  * (1.0.0): First release.
  */
 
