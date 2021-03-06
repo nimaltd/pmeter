@@ -27,7 +27,7 @@ AC power meter based on STM32 ADC
 * Call "pmeter_init(timer freq: ex:32, calibration data from eeprom)".
 * Put "pmeter_loop()" in infinite loop.
 * before using, you should be calibrate.
-* Call "pmeter_calib_step1_..." to "pmeter_calib_step4_..." and store the calibration data.
+* Call "pmeter_calib_step1_..." to "pmeter_calib_step4_..." and store the calibration data "pmeter.calib".
 ```
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
