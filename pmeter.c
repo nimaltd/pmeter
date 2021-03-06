@@ -2,6 +2,7 @@
 #include "pmeter.h"
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #if (_PMETER_RTOS == 0)
 #define pmeter_delay(x)  HAL_Delay(x)
@@ -20,8 +21,8 @@
 extern TIM_HandleTypeDef _PMETER_TIM;
 extern ADC_HandleTypeDef _PMETER_ADC;
 
-pmeter_t  pmeter;
-
+pmeter_t        pmeter;
+ 
 //###################################################################################################
 void pmeter_callback(void)
 {
@@ -38,17 +39,21 @@ void pmeter_callback(void)
   HAL_ADC_Start_DMA(&_PMETER_ADC, (uint32_t*)pmeter.buff[pmeter.buff_inedex], _PMETER_SAMPLE * 2);
 }
 //###################################################################################################
-void pmeter_init(uint16_t timer_freq_mhz)
+void pmeter_init(uint16_t timer_freq_mhz, pmeter_calib_t pmeter_calib)
 {
   _PMETER_TIM.Instance->PSC = timer_freq_mhz - 1;
   _PMETER_TIM.Instance->ARR = (uint32_t)((float)_PMETER_SAMPLE / (((float)_PMETER_SAMPLE / 1000.0f) * ((float)_PMETER_SAMPLE / 1000.0f))) - 1;
+  memcpy(&pmeter.calib, &pmeter_calib, sizeof(pmeter_calib_t));
   HAL_TIM_Base_Start(&_PMETER_TIM);
   HAL_ADC_Start_DMA(&_PMETER_ADC, (uint32_t*)pmeter.buff[pmeter.buff_inedex], _PMETER_SAMPLE * 2);
-  pmeter.v_ratio = 1.0f;
-  pmeter.i_ratio = 1.0f;
-  pmeter.w_ratio = 1.0f;
-  pmeter.offset = 2048;
   pmeter_printf("[pmeter] init done. timer frequency: %d MHz\r\n", timer_freq_mhz);
+}
+//###################################################################################################
+void pmeter_deinit(void)
+{
+  HAL_TIM_Base_Stop(&_PMETER_TIM);
+  HAL_ADC_Stop_DMA(&_PMETER_ADC);
+  pmeter_printf("[pmeter] deinit done.\r\n");
 }
 //###################################################################################################
 uint8_t pmeter_loop(void)
@@ -58,25 +63,41 @@ uint8_t pmeter_loop(void)
     pmeter.buff_done = 0;
     uint32_t v_sum_sq = 0, i_sum_sq = 0;
     int32_t p_sum = 0;
-    float rms = 0;
     for (uint16_t i = 0; i <= (_PMETER_SAMPLE * 2) - 2; i += 2)
     {
       int32_t v_signed, i_signed;
-      v_signed = pmeter.buff[1 - pmeter.buff_inedex][i + _PMETER_RANK_V - 1] - pmeter.offset;
+      v_signed = pmeter.buff[1 - pmeter.buff_inedex][i + _PMETER_RANK_V - 1] - pmeter.calib.center;
       v_sum_sq += (v_signed * v_signed);
-      i_signed = pmeter.buff[1 - pmeter.buff_inedex][i + _PMETER_RANK_I - 1] - pmeter.offset;
+      i_signed = pmeter.buff[1 - pmeter.buff_inedex][i + _PMETER_RANK_I - 1] - pmeter.calib.center;
       if (i_signed > _PMETER_ADC_NOISE_VALUE || i_signed < -_PMETER_ADC_NOISE_VALUE)
       {
         i_sum_sq += (i_signed * i_signed);
         p_sum += i_signed * v_signed;
       }
     }
-    rms = (float)sqrt((float)v_sum_sq / (float)_PMETER_SAMPLE) * pmeter.v_ratio;
-    pmeter.v = rms;
-    rms = (float) sqrt((float) i_sum_sq / (float) _PMETER_SAMPLE) * pmeter.i_ratio;
-    pmeter.i = rms;
+    pmeter.v_raw = (float)sqrt((float)v_sum_sq / (float)_PMETER_SAMPLE);
+    pmeter.v = (pmeter.v_raw - pmeter.calib.v_raw_low) * (pmeter.calib.v_ref_high - pmeter.calib.v_ref_low);
+    pmeter.v /= (pmeter.calib.v_raw_high - pmeter.calib.v_raw_low);
+    pmeter.v += pmeter.calib.v_ref_low;
+    if (isinf(pmeter.v))
+      pmeter.v = 0;
+    if (pmeter.v < 0)
+      pmeter.v = 0;
+    pmeter.i_raw = (float) sqrt((float) i_sum_sq / (float) _PMETER_SAMPLE);
+    pmeter.i = (pmeter.i_raw - pmeter.calib.i_raw_low) * (pmeter.calib.i_ref_high - pmeter.calib.i_ref_low);
+    pmeter.i /= (pmeter.calib.i_raw_high - pmeter.calib.i_raw_low);
+    pmeter.i += pmeter.calib.i_ref_low;
+    if (isinf(pmeter.i))
+      pmeter.i = 0;
+    if (pmeter.i < 0)
+      pmeter.i = 0;
     pmeter.va = pmeter.v * pmeter.i;
-    pmeter.w = ((float)p_sum / (float)_PMETER_SAMPLE) * pmeter.v_ratio * pmeter.i_ratio * pmeter.w_ratio;
+    pmeter.w_raw = (float)((float)p_sum / (float)_PMETER_SAMPLE);
+    pmeter.w = (pmeter.w_raw - pmeter.calib.w_raw_low) * (pmeter.calib.w_ref_high - pmeter.calib.w_ref_low);
+    pmeter.w /= (pmeter.calib.w_raw_high - pmeter.calib.w_raw_low);
+    pmeter.w += pmeter.calib.w_ref_low;
+    if (pmeter.w < 0)
+      pmeter.w = 0;    
     if (pmeter.w > pmeter.va)
       pmeter.w = pmeter.va;
     pmeter.pf = pmeter.w / pmeter.va;
@@ -102,12 +123,8 @@ void pmeter_reset_counter(void)
   pmeter.varh = 0;
 }
 //###################################################################################################
-void pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage)
+void pmeter_calib_step1_without_load_v_high(float rms_voltage)
 {
-  pmeter_printf("[pmeter] calibration step 1, no load, rms voltage: %0.2f\r\n", rms_voltage);
-  pmeter.v_ratio = 1.0f;
-  pmeter.i_ratio = 1.0f;
-  pmeter.w_ratio = 1.0f;
   while (pmeter_loop() == 0)
     pmeter_delay(1);
   while (pmeter_loop() == 0)
@@ -116,45 +133,49 @@ void pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage)
   for (uint16_t i = _PMETER_RANK_I - 1; i < _PMETER_SAMPLE * 2; i += 2)
     sum += pmeter.buff[1 - pmeter.buff_inedex][i];
   sum = sum / _PMETER_SAMPLE;
-  pmeter_printf("[pmeter] pmeter.offset: %d\r\n", (uint16_t )sum);
-  pmeter_calib->offset = sum;
-  pmeter.offset = sum;
+  pmeter.calib.center = sum;
   while (pmeter_loop() == 0)
-    pmeter_delay(1);
-  while (pmeter_loop() == 0)
-    pmeter_delay(1);
-  float error = rms_voltage / pmeter.v;
-  pmeter_calib->v = error * pmeter.v_ratio;
-  pmeter.v_ratio = pmeter_calib->v;
-  pmeter_printf("[pmeter] pmeter.v_ratio: %.5f\r\n", pmeter.v_ratio);
+    pmeter_delay(1); 
+  pmeter.calib.v_ref_high = rms_voltage;
+  pmeter.calib.v_raw_high = pmeter.v_raw;
 }
 //###################################################################################################
-void pmeter_calib_step2_res_load(pmeter_calib_t *pmeter_calib, float rms_current)
+void pmeter_calib_step2_without_load_v_low(float rms_voltage)
 {
-  pmeter_printf("[pmeter] calibration step 2, resistor load, rms current: %0.2f\r\n", rms_current);
   while (pmeter_loop() == 0)
     pmeter_delay(1);
   while (pmeter_loop() == 0)
-    pmeter_delay(1);
-  float error = rms_current / pmeter.i;
-  pmeter_calib->i = error * pmeter.i_ratio;
-  pmeter.i_ratio = pmeter_calib->i;
+    pmeter_delay(1);  
+  pmeter.calib.v_ref_low = rms_voltage;
+  pmeter.calib.v_raw_low = pmeter.v_raw;
+}
+//###################################################################################################
+void pmeter_calib_step3_resistor_load_i_high(float rms_current)
+{
   while (pmeter_loop() == 0)
     pmeter_delay(1);
   while (pmeter_loop() == 0)
+    pmeter_delay(1);  
+  pmeter.calib.i_ref_high = rms_current;
+  pmeter.calib.i_raw_high = pmeter.i_raw;
+  pmeter.calib.w_raw_high = pmeter.w_raw;
+  pmeter.calib.w_ref_high = rms_current * pmeter.v;
+}
+//###################################################################################################
+void pmeter_calib_step4_resistor_load_i_low(float rms_current)
+{
+  while (pmeter_loop() == 0)
     pmeter_delay(1);
-  error = pmeter.va / pmeter.w;
-  pmeter_calib->w = error;
-  pmeter.w_ratio = error;
-  pmeter_printf("[pmeter] pmeter.i_ratio: %.5f\r\n", pmeter.i_ratio);
-  pmeter_printf("[pmeter] pmeter.w_ratio: %.5f\r\n", pmeter.w_ratio);
+  while (pmeter_loop() == 0)
+    pmeter_delay(1);  
+  pmeter.calib.i_ref_low = rms_current;
+  pmeter.calib.i_raw_low = pmeter.i_raw;
+  pmeter.calib.w_raw_low = pmeter.w_raw;
+  pmeter.calib.w_ref_low = rms_current * pmeter.v;
 }
 //###################################################################################################
 void pmeter_calib_set(pmeter_calib_t pmeter_calib)
 {
-  pmeter.v_ratio = pmeter_calib.v;
-  pmeter.i_ratio = pmeter_calib.i;
-  pmeter.w_ratio = pmeter_calib.w;
-  pmeter.offset = pmeter_calib.offset;
+  memcpy(&pmeter.calib, &pmeter_calib, sizeof(pmeter_calib_t));
 }
 //###################################################################################################

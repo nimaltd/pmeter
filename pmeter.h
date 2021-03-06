@@ -15,9 +15,10 @@
  */
 
 /*
- * Version: 1.1.0
+ * Version: 1.2.0
  *
  * History:
+ * (1.2.0): Change to 2 point calibration. Fix some bugs.
  * (1.1.0): Bug fixed. Do not need ratio of resistors and CT.
  * (1.0.4): Improve VAR Accuracy.
  * (1.0.3): Fix NaN values.
@@ -32,11 +33,20 @@ extern "C" {
 
 typedef struct
 {
-  uint16_t    offset;
-  float       v;
-  float       i;
-  float       w;
-
+  uint16_t    center;
+  float       v_raw_low;
+  float       v_raw_high;
+  float       i_raw_low;
+  float       i_raw_high;
+  float       w_raw_low;
+  float       w_raw_high;
+  float       v_ref_low;
+  float       v_ref_high;
+  float       i_ref_low;
+  float       i_ref_high;
+  float       w_ref_low;
+  float       w_ref_high;
+  
 }pmeter_calib_t;
 
 typedef struct
@@ -44,10 +54,10 @@ typedef struct
   uint16_t        buff[2][_PMETER_SAMPLE * 2];
   uint8_t         buff_inedex;
   uint8_t         buff_done;
-  uint16_t        offset;
-  float           v_ratio;
-  float           i_ratio;
-  float           w_ratio;
+  pmeter_calib_t  calib;
+  float           v_raw;
+  float           i_raw;
+  float           w_raw;
   float           v;
   float           i;
   float           va;
@@ -61,16 +71,21 @@ typedef struct
 
 }pmeter_t;
 
-extern pmeter_t pmeter;
-//############################################################################################
-void          pmeter_callback(void); // adc dma callback
-void          pmeter_init(uint16_t timer_freq_mhz); //  init power meter
-uint8_t       pmeter_loop(void);  //  after update value, return 1
-void          pmeter_reset_counter(void); //  reset all wh,vah,varh
+extern pmeter_t         pmeter;
 
-void          pmeter_calib_step1_no_load(pmeter_calib_t *pmeter_calib, float rms_voltage);  //  calibration, no load, input voltage
-void          pmeter_calib_step2_res_load(pmeter_calib_t *pmeter_calib, float rms_current); //  calibration, resistor load , input current
-void          pmeter_calib_set(pmeter_calib_t pmeter_calib); // set calibration values
+//############################################################################################
+void    pmeter_callback(void); // adc dma callback
+void    pmeter_init(uint16_t timer_freq_mhz, pmeter_calib_t pmeter_calib); //  init power meter
+void    pmeter_deinit(void);
+uint8_t pmeter_loop(void);  //  after update value, return 1
+void    pmeter_reset_counter(void); //  reset all wh,vah,varh
+
+void    pmeter_calib_step1_without_load_v_high(float rms_voltage);
+void    pmeter_calib_step2_without_load_v_low(float rms_voltage);
+void    pmeter_calib_step3_resistor_load_i_high(float rms_current);
+void    pmeter_calib_step4_resistor_load_i_low(float rms_current);
+
+void    pmeter_calib_load(pmeter_calib_t pmeter_calib); // load calibration values
 //############################################################################################
 #ifdef __cplusplus
 }
