@@ -24,10 +24,10 @@ AC power meter based on STM32 ADC
 * Add library on project.
 * Configure "pmeterConfig.h".
 * Put "pmeter_callback()" in adc dma callback.
-* Call "pmeter_init(timer freq: ex:32)".
+* Call "pmeter_init(timer freq: ex:32, calibration data from eeprom)".
 * Put "pmeter_loop()" in infinite loop.
 * before using, you should be calibrate.
-* Call "pmeter_calib_step1_no_load" and "pmeter_calib_step2_res_load" and store the calibration data.
+* Call "pmeter_calib_step1_..." to "pmeter_calib_step4_..." and store the calibration data.
 ```
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
@@ -37,14 +37,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 void main()
 {
   pmeter_calib_t calib;
-  pmeter_init(32);
-  //pmeter_calib_step1_no_load(&calib, 24.5f); // 24.5v measure by ac multimeter
-  //pmeter_calib_step2_res_load(&calib, 0.650f);// put a resistor and measure by ac multimeter
-  calib.offset = 1980;
-  calib.v = 0.0245f;
-  calib.i = 0.00393f;
-  calib.w = 1.030f;
-  pmeter_calib_set(calib);
+  ...
+  // load calibration data from eeprom to calib struct
+  ...
+  pmeter_init(32, calib);
   while(1)
   {
     pmeter_loop();
