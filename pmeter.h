@@ -15,9 +15,10 @@
  */
 
 /*
- * Version: 1.2.0
+ * Version: 1.2.1
  *
  * History:
+ * (1.2.1): Add pmeter_pause(), pmeter_resume(), pmeter_set_counter() functions.
  * (1.2.0): Change to 2 point calibration. Fix some bugs.
  * (1.1.0): Bug fixed. Do not need ratio of resistors and CT.
  * (1.0.4): Improve VAR Accuracy.
@@ -76,9 +77,11 @@ extern pmeter_t         pmeter;
 //############################################################################################
 void    pmeter_callback(void); // adc dma callback
 void    pmeter_init(uint16_t timer_freq_mhz, pmeter_calib_t pmeter_calib); //  init power meter
-void    pmeter_deinit(void);
+void    pmeter_resume(void);  // resume 
+void    pmeter_pause(void);   //  pause
 uint8_t pmeter_loop(void);  //  after update value, return 1
 void    pmeter_reset_counter(void); //  reset all wh,vah,varh
+void    pmeter_set_counter(float vah, float wh, float varh); // set init value
 
 void    pmeter_calib_step1_without_load_v_high(float rms_voltage);
 void    pmeter_calib_step2_without_load_v_low(float rms_voltage);

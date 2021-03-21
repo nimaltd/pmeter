@@ -49,11 +49,20 @@ void pmeter_init(uint16_t timer_freq_mhz, pmeter_calib_t pmeter_calib)
   pmeter_printf("[pmeter] init done. timer frequency: %d MHz\r\n", timer_freq_mhz);
 }
 //###################################################################################################
-void pmeter_deinit(void)
+void pmeter_resume(void)
+{
+  HAL_TIM_Base_Start(&_PMETER_TIM);
+  HAL_ADC_Start_DMA(&_PMETER_ADC, (uint32_t*)pmeter.buff[pmeter.buff_inedex], _PMETER_SAMPLE * 2);
+  pmeter_printf("[pmeter] resume done.\r\n");
+}
+//###################################################################################################
+void pmeter_pause(void)
 {
   HAL_TIM_Base_Stop(&_PMETER_TIM);
   HAL_ADC_Stop_DMA(&_PMETER_ADC);
-  pmeter_printf("[pmeter] deinit done.\r\n");
+  _PMETER_TIM.Instance->CNT = 0;
+  pmeter.buff_done = 0;
+  pmeter_printf("[pmeter] pause done.\r\n");
 }
 //###################################################################################################
 uint8_t pmeter_loop(void)
@@ -121,6 +130,13 @@ void pmeter_reset_counter(void)
   pmeter.vah = 0;
   pmeter.wh = 0;
   pmeter.varh = 0;
+}
+//###################################################################################################
+void pmeter_set_counter(float vah, float wh, float varh)
+{
+  pmeter.vah = vah;
+  pmeter.wh = wh;
+  pmeter.varh = varh;
 }
 //###################################################################################################
 void pmeter_calib_step1_without_load_v_high(float rms_voltage)
