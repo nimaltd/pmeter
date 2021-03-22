@@ -34,7 +34,7 @@ extern "C" {
 
 typedef struct
 {
-  uint16_t    center;
+  uint32_t    center;
   float       v_raw_low;
   float       v_raw_high;
   float       i_raw_low;
